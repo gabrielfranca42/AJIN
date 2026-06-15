@@ -12,7 +12,7 @@ import { FormsModule } from '@angular/forms';
     <div class="container">
       <div class="header">
         
-        <div class="header-actions">
+        <div class="header-actions" *ngIf="db.isLocal">
           <div class="prompt">
             <span class="prompt-prefix">ajin@shell:~$</span>
             <span>./start_second_brain.sh</span>
@@ -176,7 +176,7 @@ export class HomeComponent implements OnInit {
   searchQuery: string = '';
   sortOrder: 'desc' | 'asc' = 'desc';
   
-  private db = inject(DbService);
+  public db = inject(DbService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
 

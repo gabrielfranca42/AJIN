@@ -18,10 +18,10 @@ import { DbService, Post } from '../../services/db.service';
           <button class="btn btn-icon" (click)="goBack()">
             cd ..
           </button>
-          <button class="btn btn-icon" (click)="editPost()">
+          <button class="btn btn-icon" (click)="editPost()" *ngIf="db.isLocal">
             vi
           </button>
-          <button class="btn btn-icon text-danger" (click)="deletePost()">
+          <button class="btn btn-icon text-danger" (click)="deletePost()" *ngIf="db.isLocal">
             rm
           </button>
         </div>
@@ -143,7 +143,7 @@ import { DbService, Post } from '../../services/db.service';
 export class ViewComponent implements OnInit {
   post: Post | undefined;
   
-  private db = inject(DbService);
+  public db = inject(DbService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
