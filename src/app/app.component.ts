@@ -8,6 +8,6 @@ import { RouterOutlet } from '@angular/router';
   template: `<router-outlet></router-outlet>`,
   styles: []
 })
-export class App {
+export class AppComponent {
   title = 'second-brain';
 }
