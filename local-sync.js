@@ -10,8 +10,8 @@ app.use(express.json({ limit: '50mb' })); // Permitir imagens em base64 grandes
 app.post('/sync', (req, res) => {
   const { action, posts } = req.body;
   
-  // 1. Salvar o JSON em src/assets/db.json
-  const dir = 'src/assets';
+  // 1. Salvar o JSON em public/db.json
+  const dir = 'public';
   if (!fs.existsSync(dir)){
       fs.mkdirSync(dir, { recursive: true });
   }
@@ -20,7 +20,7 @@ app.post('/sync', (req, res) => {
   // 2. Executar comandos Git
   const commitMsg = action === 'delete' ? 'delete de post' : 'adição de post';
   
-  const cmd = `git add src/assets/db.json && git commit -m "${commitMsg}" && git push origin main`;
+  const cmd = `git add public/db.json && git commit -m "${commitMsg}" && git push origin main`;
   
   exec(cmd, (err, stdout, stderr) => {
     if (err) {

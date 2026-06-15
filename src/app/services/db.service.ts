@@ -28,7 +28,7 @@ export class DbService extends Dexie {
   async getAllPosts(): Promise<Post[]> {
     if (!this.isLocal) {
       try {
-        const res = await fetch('assets/db.json');
+        const res = await fetch('db.json');
         if (!res.ok) return [];
         const data = await res.json();
         return data.sort((a: Post, b: Post) => b.updatedAt - a.updatedAt);
