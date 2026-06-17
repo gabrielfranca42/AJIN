@@ -16,6 +16,12 @@ import { FormsModule } from '@angular/forms';
           <span>nano {{ post.title || 'untitled.md' }}</span>
         </div>
         <div class="actions">
+          <button class="btn btn-icon" *ngIf="originalContent !== null" (click)="rollbackCorrection()" title="Reverter Correção">
+            [X] Rollback
+          </button>
+          <button class="btn btn-icon" (click)="correctGrammar()" [disabled]="isCorrecting" title="Corrigir Português">
+            {{ isCorrecting ? '[...] Processando' : '✓ Corrigir PT-BR' }}
+          </button>
           <button class="btn btn-icon" (click)="goBack()">
             [ESC] Cancel
           </button>
@@ -182,6 +188,9 @@ import { FormsModule } from '@angular/forms';
 export class EditorComponent implements OnInit {
   post: Post = { title: '', content: '', images: [], createdAt: 0, updatedAt: 0 };
   
+  isCorrecting = false;
+  originalContent: string | null = null;
+  
   private db = inject(DbService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -196,6 +205,82 @@ export class EditorComponent implements OnInit {
         this.post = existing;
         this.cdr.detectChanges();
       }
+    }
+  }
+
+  async correctGrammar() {
+    if (!this.post.content || !this.post.content.trim()) return;
+    
+    this.isCorrecting = true;
+    // Salva o texto original para permitir o rollback
+    this.originalContent = this.post.content;
+    this.cdr.detectChanges();
+    
+    try {
+      // Utilizamos a API pública do LanguageTool (não precisa de backend/chave)
+      const response = await fetch('https://api.languagetoolplus.com/v2/check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          text: this.post.content,
+          language: 'pt-BR'
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.matches && data.matches.length > 0) {
+        let newContent = this.post.content;
+        
+        // Filtramos para ignorar regras de "estilo" ou "linguagem ofensiva/profanidade"
+        // Assim o corretor não tenta censurar os palavrões, apenas corrige a ortografia/gramática
+        const matches = data.matches
+          .filter((m: any) => {
+            const categoryId = m.rule?.category?.id?.toLowerCase() || '';
+            // Ignora categorias que tentam politizar ou censurar o texto
+            return !categoryId.includes('offensive') && 
+                   !categoryId.includes('profanity') && 
+                   !categoryId.includes('style');
+          })
+          .sort((a: any, b: any) => b.offset - a.offset);
+        
+        for (const match of matches) {
+          if (match.replacements && match.replacements.length > 0) {
+            const replacement = match.replacements[0].value;
+            const before = newContent.substring(0, match.offset);
+            const after = newContent.substring(match.offset + match.length);
+            newContent = before + replacement + after;
+          }
+        }
+        
+        // Só atualizamos se realmente houve mudanças após o filtro
+        if (newContent !== this.post.content) {
+          this.post.content = newContent;
+        } else {
+          alert("O texto parece estar correto! Nenhuma regra gramatical rígida foi violada.");
+          this.originalContent = null;
+        }
+      } else {
+        alert("O texto parece estar correto! Nenhum erro encontrado.");
+        this.originalContent = null; // Remove o estado de rollback se não houve mudanças
+      }
+    } catch (error) {
+      console.error("Erro na correção automática:", error);
+      alert("Houve uma falha ao contatar a API de correção. Tente novamente.");
+      this.originalContent = null;
+    } finally {
+      this.isCorrecting = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  rollbackCorrection() {
+    if (this.originalContent !== null) {
+      this.post.content = this.originalContent;
+      this.originalContent = null; // Reseta após reverter
+      this.cdr.detectChanges();
     }
   }
 
