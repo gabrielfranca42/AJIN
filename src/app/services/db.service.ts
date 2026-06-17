@@ -88,14 +88,20 @@ export class DbService extends Dexie {
     if (!this.isLocal) return;
     try {
       const allPosts = await this.getAllPosts();
-      await fetch('http://localhost:3000/sync', {
+      const response = await fetch('http://localhost:3000/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, posts: allPosts })
       });
+      
+      if (!response.ok) {
+        throw new Error('Servidor retornou erro: ' + response.status);
+      }
+      
       console.log('Sincronização acionada com sucesso!');
     } catch (e) {
-      console.error('Falha ao sincronizar com servidor local. O servidor "node local-sync.js" está rodando?', e);
+      console.error('Falha ao sincronizar com servidor local.', e);
+      alert('⚠️ ERRO CRÍTICO: O arquivo db.json não foi atualizado!\n\nO servidor "local-sync.js" parece estar offline ou travado. Verifique o seu terminal antes de fazer qualquer commit, caso contrário suas mudanças não irão para o ar.');
     }
   }
 }
