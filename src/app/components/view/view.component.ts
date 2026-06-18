@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DbService, Post } from '../../services/db.service';
@@ -34,8 +35,7 @@ import { DbService, Post } from '../../services/db.service';
           <span *ngIf="post.createdAt !== post.updatedAt"> | Modified: {{ post.updatedAt | date:'yyyy-MM-dd HH:mm' }}</span>
         </div>
         
-        <div class="content markdown-content">
-          <p>{{ post.content }}</p>
+        <div class="content markdown-content" [innerHTML]="parsedContent">
         </div>
         
         <div class="image-gallery" *ngIf="post.images && post.images.length > 0">
@@ -102,6 +102,32 @@ import { DbService, Post } from '../../services/db.service';
       margin-bottom: 40px;
       color: var(--text-primary);
     }
+    .content a {
+      color: var(--accent-color);
+      text-decoration: underline;
+    }
+    .content pre {
+      background: var(--surface-color);
+      padding: 15px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      border: 1px solid var(--border-color);
+      margin: 10px 0;
+    }
+    .content .embedded-image {
+      margin: 16px 0;
+    }
+    .content .embedded-image img {
+      max-width: 100%;
+      border-radius: 4px;
+    }
+    .content .embedded-image .img-name {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 4px;
+    }
     
     .image-gallery {
       margin-top: 40px;
@@ -142,17 +168,22 @@ import { DbService, Post } from '../../services/db.service';
 })
 export class ViewComponent implements OnInit {
   post: Post | undefined;
+  parsedContent: SafeHtml = '';
   
   public db = inject(DbService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private sanitizer = inject(DomSanitizer);
 
   async ngOnInit() {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       const id = parseInt(idParam, 10);
       this.post = await this.db.getPost(id);
+      if (this.post) {
+        this.parseMarkdown();
+      }
       this.cdr.detectChanges();
       if (!this.post) {
         this.router.navigate(['/']);
@@ -175,5 +206,37 @@ export class ViewComponent implements OnInit {
       await this.db.deletePost(this.post.id);
       this.router.navigate(['/']);
     }
+  }
+
+  parseMarkdown() {
+    if (!this.post || !this.post.content) {
+      this.parsedContent = '';
+      return;
+    }
+    
+    // Escapar HTML básico
+    let html = this.post.content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Imagens: ![Nome da Imagem]
+    if (this.post.images && this.post.images.length > 0) {
+      html = html.replace(/!\[(.*?)\]/g, (match, imgName) => {
+        const img = this.post!.images.find(i => i.name === imgName.trim());
+        if (img) {
+          return `<div class="embedded-image"><img src="${img.data}" alt="${img.name}"><div class="img-name">${img.name}</div></div>`;
+        }
+        return match;
+      });
+    }
+
+    // Links: [texto](url)
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+    // Code blocks: \`\`\`codigo\`\`\`
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+
+    this.parsedContent = this.sanitizer.bypassSecurityTrustHtml(html);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DbService, Post } from '../../services/db.service';
@@ -16,6 +16,12 @@ import { FormsModule } from '@angular/forms';
           <span>nano {{ post.title || 'untitled.md' }}</span>
         </div>
         <div class="actions">
+          <button class="btn btn-icon" (click)="insertLink()" title="Inserir Link">
+            [URL]
+          </button>
+          <button class="btn btn-icon" (click)="insertCode()" title="Inserir Código">
+            [&lt;/&gt;]
+          </button>
           <button class="btn btn-icon" *ngIf="originalContent !== null" (click)="rollbackCorrection()" title="Reverter Correção">
             [X] Rollback
           </button>
@@ -40,6 +46,7 @@ import { FormsModule } from '@angular/forms';
         >
         
         <textarea 
+          #contentInput
           class="content-input" 
           placeholder="Type your markdown or text here..."
           [(ngModel)]="post.content"
@@ -53,6 +60,9 @@ import { FormsModule } from '@angular/forms';
             <div *ngFor="let img of post.images; let i = index" class="image-preview glass-panel">
               <img [src]="img.data" [alt]="img.name">
               <div class="img-name">{{ img.name }}</div>
+              <button class="btn-icon insert-btn" (click)="insertImageToText(img.name)" title="Inserir no texto">
+                + Inserir
+              </button>
               <button class="btn-icon remove-btn" (click)="removeImage(i)">
                 rm
               </button>
@@ -165,6 +175,16 @@ import { FormsModule } from '@angular/forms';
       font-size: 0.8rem;
       border: 1px solid var(--danger-color);
     }
+    .insert-btn {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      background: var(--bg-color);
+      color: var(--accent-color);
+      padding: 2px 6px;
+      font-size: 0.8rem;
+      border: 1px solid var(--accent-color);
+    }
     
     .add-image-btn {
       display: flex;
@@ -186,6 +206,8 @@ import { FormsModule } from '@angular/forms';
   `]
 })
 export class EditorComponent implements OnInit {
+  @ViewChild('contentInput') contentInput!: ElementRef<HTMLTextAreaElement>;
+
   post: Post = { title: '', content: '', images: [], createdAt: 0, updatedAt: 0 };
   
   isCorrecting = false;
@@ -306,12 +328,39 @@ export class EditorComponent implements OnInit {
     this.post.images.splice(index, 1);
   }
 
-  async savePost() {
-    await this.db.savePost(this.post);
-    this.router.navigate(['/']);
+  savePost() {
+    this.db.savePost(this.post).then(() => {
+      this.router.navigate(['/']);
+    });
   }
 
   goBack() {
     this.router.navigate(['/']);
+  }
+
+  insertAtCursor(textToInsert: string) {
+    if (!this.contentInput) return;
+    const el = this.contentInput.nativeElement;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const text = this.post.content;
+    this.post.content = text.substring(0, start) + textToInsert + text.substring(end);
+    
+    setTimeout(() => {
+      el.selectionStart = el.selectionEnd = start + textToInsert.length;
+      el.focus();
+    }, 0);
+  }
+
+  insertLink() {
+    this.insertAtCursor('[Texto do link](https://exemplo.com)');
+  }
+
+  insertCode() {
+    this.insertAtCursor('\n```\nSeu código aqui\n```\n');
+  }
+
+  insertImageToText(imgName: string) {
+    this.insertAtCursor(`\n![${imgName}]\n`);
   }
 }
