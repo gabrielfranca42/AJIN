@@ -2,16 +2,17 @@ import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { TypewriterDirective } from '../../directives/typewriter.directive';
 import { DbService, Post } from '../../services/db.service';
 
 @Component({
   selector: 'app-view',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TypewriterDirective],
   template: `
     <div class="container" *ngIf="post">
       <div class="top-bar">
-        <div class="prompt">
+        <div class="prompt" appTypewriter [delayOffset]="0">
           <span class="prompt-prefix">ajin@shell:~$</span>
           <span>cat {{ post.title || 'untitled.md' }}</span>
         </div>
@@ -29,13 +30,13 @@ import { DbService, Post } from '../../services/db.service';
       </div>
 
       <div class="view-area glass-panel">
-        <h1 class="title"># {{ post.title || 'untitled.md' }}</h1>
-        <div class="meta">
+        <h1 class="title" appTypewriter [delayOffset]="300"># {{ post.title || 'untitled.md' }}</h1>
+        <div class="meta" appTypewriter [delayOffset]="600">
           <span>Created: {{ post.createdAt | date:'yyyy-MM-dd HH:mm' }}</span>
           <span *ngIf="post.createdAt !== post.updatedAt"> | Modified: {{ post.updatedAt | date:'yyyy-MM-dd HH:mm' }}</span>
         </div>
         
-        <div class="content markdown-content" [innerHTML]="parsedContent">
+        <div class="content markdown-content" [innerHTML]="parsedContent" appTypewriter [delayOffset]="1000">
         </div>
         
         <div class="image-gallery" *ngIf="post.images && post.images.length > 0">
