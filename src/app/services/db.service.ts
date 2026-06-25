@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import Dexie, { Table } from 'dexie';
 
-export type SyncAction = 'post' | 'update' | 'delete';
+export type SyncAction = 'post' | 'update' | 'delete'
 
 export interface Post {
   id?: number;
