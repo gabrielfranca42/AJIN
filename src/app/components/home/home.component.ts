@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
+import { TypewriterDirective } from '../../directives/typewriter.directive';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { DbService, Post, SyncAction, DiffEntry } from '../../services/db.service';
@@ -7,7 +8,7 @@ import { FormsModule } from '@angular/forms';
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, TypewriterDirective],
   template: `
     <a href="https://github.com/gabrielfranca42" target="_blank" style="position: fixed; top: 20px; right: 20px; color: var(--accent-color); z-index: 9999; display: flex; align-items: center; gap: 8px; text-decoration: none; font-family: var(--font-mono); font-weight: bold; background: var(--surface-color); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); transition: all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -18,7 +19,10 @@ import { FormsModule } from '@angular/forms';
     <div class="container">
       <div class="header">
 
-        
+        <h1 appTypewriter class="animated-title" style="color: var(--accent-color); font-family: var(--font-mono); font-size: 2rem; margin-bottom: 20px;">
+          Second Brain System_
+        </h1>
+
         <div class="header-actions" *ngIf="db.isLocal">
           <div class="prompt">
             <span class="prompt-prefix">ajin@shell:~$</span>
@@ -140,8 +144,8 @@ import { FormsModule } from '@angular/forms';
       <div class="posts-grid">
         <div *ngFor="let post of posts" class="post-card glass-panel" (click)="viewPost(post.id!)">
           <div class="post-card-content">
-            <h3><span class="prompt-prefix">#</span> {{ post.title || 'untitled.md' }}</h3>
-            <p class="preview">{{ post.content | slice:0:100 }}{{ post.content.length > 100 ? '...' : '' }}</p>
+            <h3 appTypewriter [delayOffset]="100"><span class="prompt-prefix">#</span> {{ post.title || 'untitled.md' }}</h3>
+            <p appTypewriter [delayOffset]="300" class="preview">{{ post.content | slice:0:100 }}{{ post.content.length > 100 ? '...' : '' }}</p>
             
             <div class="post-meta">
               <span class="date">{{ post.updatedAt | date:'dd/MM/yyyy HH:mm' }}</span>
